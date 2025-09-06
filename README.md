@@ -2,11 +2,11 @@
 
 Golang binary serialization library, support struct with tag
 
-This library provides binary serialization and deserialization of Go structs similar to `json.Marshal` and `json.Unmarshal` but using binary format. It's based on reflection and struct tags.
+This library provides binary serialization and deserialization of Go values similar to `json.Marshal` and `json.Unmarshal` but using binary format. It's based on reflection and struct tags.
 
 ## Features
 
-- Serialize/deserialize Go structs to/from binary format using Encode/Decode functions
+- Serialize/deserialize any Go value to/from binary format using Encode/Decode functions
 - Support for fixed-length types without tags
 - Support for variable-length types (string, []byte, slices) with optional tags
 - Support for arrays ([N]T types) with optional tags
@@ -74,6 +74,33 @@ func main() {
 }
 ```
 
+### Direct Value Encoding
+
+You can now encode and decode any supported Go value directly:
+
+```go
+// Direct slice encoding/decoding
+slice := []uint32{10, 20, 30, 40, 50}
+data, err := binary.Encode(slice)
+// ... handle error
+var decodedSlice []uint32
+err = binary.Decode(data, &decodedSlice)
+
+// Direct array encoding/decoding
+array := [5]uint32{100, 200, 300, 400, 500}
+data, err := binary.Encode(array)
+// ... handle error
+var decodedArray [5]uint32
+err = binary.Decode(data, &decodedArray)
+
+// Direct basic type encoding/decoding
+number := uint32(42)
+data, err := binary.Encode(number)
+// ... handle error
+var decodedNumber uint32
+err = binary.Decode(data, &decodedNumber)
+```
+
 ### Custom Encoder/Decoder
 
 Structs can implement the BinaryEncoder and BinaryDecoder interfaces for custom serialization:
@@ -125,6 +152,7 @@ This applies to:
 - Byte arrays (`[N]byte`)
 - Other slices
 - Other arrays
+- Structs
 - Nested structs
 
 ## Implementation Details
@@ -140,3 +168,4 @@ This applies to:
 - Arrays with tags are serialized as `elements` (no length prefix)
 - Arrays without tags are serialized as `len(array) + elements` where len is a `uint32`
 - If a struct implements BinaryEncoder/BinaryDecoder, those methods are used instead of the default reflection-based approach
+- Direct value encoding is now supported for all supported types

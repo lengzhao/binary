@@ -21,7 +21,7 @@ type BinaryDecoder interface {
 	Decode([]byte) error
 }
 
-// Encode serializes a struct into binary format
+// Encode serializes a value into binary format
 func Encode(v interface{}) ([]byte, error) {
 	// Check if the value implements BinaryEncoder
 	if encoder, ok := v.(BinaryEncoder); ok {
@@ -29,20 +29,18 @@ func Encode(v interface{}) ([]byte, error) {
 	}
 
 	val := reflect.ValueOf(v)
-	if val.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("only structs are supported")
-	}
 
+	// Encode any type by calling encodeField directly
 	var buf bytes.Buffer
-	err := encodeStruct(val, &buf)
-	if err != nil {
-		return nil, err
+	tag := "" // No tag for direct encoding
+	if err := encodeField(val, &buf, tag); err != nil {
+		return nil, fmt.Errorf("error encoding value: %w", err)
 	}
 
 	return buf.Bytes(), nil
 }
 
-// Decode deserializes binary data into a struct
+// Decode deserializes binary data into a value
 func Decode(data []byte, v interface{}) error {
 	// Check if the value implements BinaryDecoder
 	if decoder, ok := v.(BinaryDecoder); ok {
@@ -50,12 +48,22 @@ func Decode(data []byte, v interface{}) error {
 	}
 
 	val := reflect.ValueOf(v)
-	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Struct {
-		return fmt.Errorf("only pointers to structs are supported")
+
+	// Check if v is a pointer
+	if val.Kind() != reflect.Ptr {
+		return fmt.Errorf("only pointers are supported for decoding")
 	}
 
+	// Get the element that the pointer points to
+	elem := val.Elem()
+
+	// Decode any type by calling decodeField directly
 	buf := bytes.NewReader(data)
-	return decodeStruct(buf, val.Elem())
+	if err := decodeField(buf, elem, ""); err != nil {
+		return fmt.Errorf("error decoding value: %w", err)
+	}
+
+	return nil
 }
 
 // encodeStruct handles serialization of a struct
