@@ -125,18 +125,6 @@ func abs64(x float64) float64 {
 	return x
 }
 
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func slicesEqual(a, b []uint32) bool {
 	if len(a) != len(b) {
 		return false
