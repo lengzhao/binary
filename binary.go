@@ -54,6 +54,11 @@ func Decode(data []byte, v interface{}) error {
 		return fmt.Errorf("only pointers are supported for decoding")
 	}
 
+	// Check if v is a nil pointer
+	if val.IsNil() {
+		return fmt.Errorf("cannot decode into nil pointer")
+	}
+
 	// Get the element that the pointer points to
 	elem := val.Elem()
 
@@ -115,9 +120,18 @@ func encodeStruct(val reflect.Value, buf *bytes.Buffer) error {
 // encodeField handles serialization of a single field
 func encodeField(field reflect.Value, buf *bytes.Buffer, tag string) error {
 	switch field.Kind() {
+	case reflect.Ptr:
+		// Handle pointer types by dereferencing them
+		if field.IsNil() {
+			return fmt.Errorf("cannot encode nil pointer")
+		}
+		return encodeField(field.Elem(), buf, tag)
+
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Float32, reflect.Float64:
+		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int:
+		return binary.Write(buf, binary.LittleEndian, field.Interface())
+
+	case reflect.Float32, reflect.Float64:
 		return binary.Write(buf, binary.LittleEndian, field.Interface())
 
 	case reflect.String:
@@ -393,9 +407,32 @@ func decodeStruct(buf *bytes.Reader, val reflect.Value) error {
 // decodeField handles deserialization of a single field
 func decodeField(buf *bytes.Reader, field reflect.Value, tag string) error {
 	switch field.Kind() {
+	case reflect.Ptr:
+		// Handle pointer types by dereferencing them
+		if field.IsNil() {
+			// Create a new instance of the pointed-to type
+			newValue := reflect.New(field.Type().Elem())
+			field.Set(newValue)
+		}
+		return decodeField(buf, field.Elem(), tag)
+
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Float32, reflect.Float64:
+		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int:
+		// For basic numeric types, we need to pass a pointer to binary.Read
+		if field.CanAddr() {
+			return binary.Read(buf, binary.LittleEndian, field.Addr().Interface())
+		} else {
+			// For non-addressable values (like array elements), we need to read into a temporary variable
+			temp := reflect.New(field.Type()).Elem()
+			err := binary.Read(buf, binary.LittleEndian, temp.Addr().Interface())
+			if err != nil {
+				return err
+			}
+			field.Set(temp)
+			return nil
+		}
+
+	case reflect.Float32, reflect.Float64:
 		// For basic numeric types, we need to pass a pointer to binary.Read
 		if field.CanAddr() {
 			return binary.Read(buf, binary.LittleEndian, field.Addr().Interface())
