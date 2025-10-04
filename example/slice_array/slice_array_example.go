@@ -14,7 +14,7 @@ func main() {
 	fmt.Printf("Original slice: %v\n", slice)
 
 	// Encode the slice directly
-	data, err := binary.Encode(slice)
+	data, err := binary.Marshal(slice)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,7 +22,7 @@ func main() {
 
 	// Decode the slice directly
 	var decodedSlice []uint32
-	err = binary.Decode(data, &decodedSlice)
+	err = binary.Unmarshal(data, &decodedSlice)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +35,7 @@ func main() {
 	fmt.Printf("Original array: %v\n", array)
 
 	// Encode the array directly
-	data, err = binary.Encode(array)
+	data, err = binary.Marshal(array)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func main() {
 
 	// Decode the array directly
 	var decodedArray [5]uint32
-	err = binary.Decode(data, &decodedArray)
+	err = binary.Unmarshal(data, &decodedArray)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func main() {
 	fmt.Printf("Original byte slice: %v\n", byteSlice)
 
 	// Encode the byte slice directly
-	data, err = binary.Encode(byteSlice)
+	data, err = binary.Marshal(byteSlice)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func main() {
 
 	// Decode the byte slice directly
 	var decodedByteSlice []byte
-	err = binary.Decode(data, &decodedByteSlice)
+	err = binary.Unmarshal(data, &decodedByteSlice)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func main() {
 	fmt.Printf("Original byte array: %v\n", byteArray)
 
 	// Encode the byte array directly
-	data, err = binary.Encode(byteArray)
+	data, err = binary.Marshal(byteArray)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func main() {
 
 	// Decode the byte array directly
 	var decodedByteArray [5]byte
-	err = binary.Decode(data, &decodedByteArray)
+	err = binary.Unmarshal(data, &decodedByteArray)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func main() {
 	fmt.Printf("Original string slice: %v\n", stringSlice)
 
 	// Encode the string slice directly
-	data, err = binary.Encode(stringSlice)
+	data, err = binary.Marshal(stringSlice)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func main() {
 
 	// Decode the string slice directly
 	var decodedStringSlice []string
-	err = binary.Decode(data, &decodedStringSlice)
+	err = binary.Unmarshal(data, &decodedStringSlice)
 	if err != nil {
 		log.Fatal(err)
 	}

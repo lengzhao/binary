@@ -6,7 +6,7 @@ This library provides binary serialization and deserialization of Go values simi
 
 ## Features
 
-- Serialize/deserialize any Go value to/from binary format using Encode/Decode functions
+- Serialize/deserialize any Go value to/from binary format using Marshal/Unmarshal functions
 - Support for fixed-length types without tags
 - Support for variable-length types (string, []byte, slices) with optional tags
 - Support for arrays ([N]T types) with optional tags
@@ -14,7 +14,7 @@ This library provides binary serialization and deserialization of Go values simi
 - Tag support for specifying fixed lengths:
   - If tag length is greater than data length, pad with zeros
   - If tag length is less than data length, truncate extra data
-- Support for custom BinaryEncoder and BinaryDecoder interfaces
+- Support for custom BinaryMarshaler and BinaryUnmarshaler interfaces
 
 ## Installation
 
@@ -56,7 +56,7 @@ func main() {
 	}
 
 	// Serialize
-	data, err := binary.Encode(person)
+	data, err := binary.Marshal(person)
 	if err != nil {
 		panic(err)
 	}
@@ -65,7 +65,7 @@ func main() {
 
 	// Deserialize
 	var decoded Person
-	err = binary.Decode(data, &decoded)
+	err = binary.Unmarshal(data, &decoded)
 	if err != nil {
 		panic(err)
 	}
@@ -81,40 +81,85 @@ You can now encode and decode any supported Go value directly:
 ```go
 // Direct slice encoding/decoding
 slice := []uint32{10, 20, 30, 40, 50}
-data, err := binary.Encode(slice)
+data, err := binary.Marshal(slice)
 // ... handle error
 var decodedSlice []uint32
-err = binary.Decode(data, &decodedSlice)
+err = binary.Unmarshal(data, &decodedSlice)
 
 // Direct array encoding/decoding
 array := [5]uint32{100, 200, 300, 400, 500}
-data, err := binary.Encode(array)
+data, err := binary.Marshal(array)
 // ... handle error
 var decodedArray [5]uint32
-err = binary.Decode(data, &decodedArray)
+err = binary.Unmarshal(data, &decodedArray)
 
 // Direct basic type encoding/decoding
 number := uint32(42)
-data, err := binary.Encode(number)
+data, err := binary.Marshal(number)
 // ... handle error
 var decodedNumber uint32
-err = binary.Decode(data, &decodedNumber)
+err = binary.Unmarshal(data, &decodedNumber)
 ```
+
+### Partial Unmarshaling
+
+The library now supports partial unmarshaling with `UnmarshalPartial`, which allows you to decode data and get information about remaining bytes:
+
+```go
+type Message struct {
+    ID   uint32
+    Text string
+}
+
+// Create data containing multiple messages
+data := []byte{...} // Binary data with multiple messages
+
+// Process messages sequentially
+currentData := data
+for len(currentData) > 0 {
+    var msg Message
+    remaining, err := binary.UnmarshalPartial(currentData, &msg)
+    if err != nil {
+        break
+    }
+    
+    fmt.Printf("Decoded message: %+v, remaining bytes: %d\n", msg, remaining)
+    
+    // Move to next message
+    if remaining == 0 {
+        break
+    }
+    currentData = currentData[len(currentData)-remaining:]
+}
+```
+
+**Key differences between `Unmarshal` and `UnmarshalPartial`:**
+
+- `Unmarshal(data []byte, v interface{}) error`:
+  - Expects all data to be consumed
+  - Returns error if there are remaining bytes after unmarshaling
+  - Best for cases where you expect exact data match
+
+- `UnmarshalPartial(data []byte, v interface{}) (remaining int, error)`:
+  - Allows partial data consumption
+  - Returns the number of bytes remaining after unmarshaling
+  - Perfect for processing data streams or multiple consecutive structures
+  - Useful when input data may contain more information than needed
 
 ### Custom Encoder/Decoder
 
-Structs can implement the BinaryEncoder and BinaryDecoder interfaces for custom serialization:
+Structs can implement the BinaryMarshaler and BinaryUnmarshaler interfaces for custom serialization:
 
 ```go
 type CustomType struct {
 	Value string
 }
 
-func (c *CustomType) Encode() ([]byte, error) {
+func (c *CustomType) MarshalBinary() ([]byte, error) {
 	return []byte("custom:" + c.Value), nil
 }
 
-func (c *CustomType) Decode(data []byte) error {
+func (c *CustomType) UnmarshalBinary(data []byte) error {
 	if len(data) < 7 || string(data[:7]) != "custom:" {
 		return nil // Not in our custom format
 	}
@@ -167,5 +212,5 @@ This applies to:
 - Slices without tags are serialized as `len(slice) + elements` where len is a `uint32`
 - Arrays with tags are serialized as `elements` (no length prefix)
 - Arrays without tags are serialized as `len(array) + elements` where len is a `uint32`
-- If a struct implements BinaryEncoder/BinaryDecoder, those methods are used instead of the default reflection-based approach
+- If a struct implements BinaryMarshaler/BinaryUnmarshaler, those methods are used instead of the default reflection-based approach
 - Direct value encoding is now supported for all supported types

@@ -49,7 +49,7 @@ func main() {
 	fmt.Printf("  Weight: %.1f kg\n", person.Weight)
 
 	// Serialize
-	data, err := binary.Encode(person)
+	data, err := binary.Marshal(person)
 	if err != nil {
 		panic(err)
 	}
@@ -58,7 +58,7 @@ func main() {
 
 	// Deserialize
 	var decoded Person
-	err = binary.Decode(data, &decoded)
+	err = binary.Unmarshal(data, &decoded)
 	if err != nil {
 		panic(err)
 	}
