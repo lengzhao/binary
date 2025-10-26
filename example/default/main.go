@@ -9,31 +9,33 @@ import (
 
 // Person represents a person with various data types
 type Person struct {
-	Name    string
-	Age     uint8
-	Email   string    `binary:"50"` // Fixed length of 50 bytes
-	Data    []byte    `binary:"10"` // Fixed length of 10 bytes
-	Scores  []uint32  `binary:"5"`  // Fixed length of 5 elements
-	ID      [16]byte  `binary:"16"` // Fixed length of 16 bytes
-	Values  [4]uint32 `binary:"4"`  // Fixed length of 4 elements
-	Address string    // Use default format (length + data)
-	Height  float32   // Float32 value
-	Weight  float64   // Float64 value
+	Name      string
+	Age       uint8
+	Email     string    `binary:"50"` // Fixed length of 50 bytes
+	Data      []byte    `binary:"10"` // Fixed length of 10 bytes
+	Scores    []uint32  `binary:"5"`  // Fixed length of 5 elements
+	ID        [16]byte  `binary:"16"` // Fixed length of 16 bytes
+	Values    [4]uint32 `binary:"4"`  // Fixed length of 4 elements
+	Address   string    // Use default format (length + data)
+	Height    float32   // Float32 value
+	Weight    float64   // Float64 value
+	HaveChild bool      // Bool value
 	// TempField string   `binary:"-"`      // Example of ignored field
 }
 
 func main() {
 	person := Person{
-		Name:    "Alice",
-		Age:     30,
-		Email:   "alice@example.com",
-		Data:    []byte{1, 2, 3, 4, 5}, // Only 5 bytes, will be padded to 10
-		Scores:  []uint32{100, 95, 87}, // Only 3 elements, will be padded to 5
-		ID:      [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
-		Values:  [4]uint32{1000, 2000, 3000, 4000},
-		Address: "Main St 123",
-		Height:  165.5, // Height in cm
-		Weight:  62.3,  // Weight in kg
+		Name:      "Alice",
+		Age:       30,
+		Email:     "alice@example.com",
+		Data:      []byte{1, 2, 3, 4, 5}, // Only 5 bytes, will be padded to 10
+		Scores:    []uint32{100, 95, 87}, // Only 3 elements, will be padded to 5
+		ID:        [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+		Values:    [4]uint32{1000, 2000, 3000, 4000},
+		Address:   "Main St 123",
+		Height:    165.5, // Height in cm
+		Weight:    62.3,  // Weight in kg
+		HaveChild: true,
 	}
 
 	fmt.Println("Original person:")
@@ -74,6 +76,7 @@ func main() {
 	fmt.Printf("  Address: %s\n", decoded.Address)
 	fmt.Printf("  Height: %.1f cm\n", decoded.Height)
 	fmt.Printf("  Weight: %.1f kg\n", decoded.Weight)
+	fmt.Printf("  HaveChild: %v\n", decoded.HaveChild)
 
 	// Check if original and decoded persons are compatible
 	// Use epsilon comparison for floating point values
@@ -93,7 +96,8 @@ func main() {
 		arraysEqualUint32(person.Values[:], decoded.Values[:]) &&
 		person.Address == decoded.Address &&
 		heightEqual &&
-		weightEqual {
+		weightEqual &&
+		decoded.HaveChild {
 		fmt.Println("\nSuccess: Original and decoded persons are compatible!")
 	} else {
 		fmt.Println("\nError: Original and decoded persons are not compatible!")

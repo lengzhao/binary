@@ -12,6 +12,18 @@
 //   - Handling data streams where you need to process data incrementally
 //   - Scenarios where the input data may contain more information than needed
 //
+// Supported data types:
+//   - Integer types: uint8, uint16, uint32, uint64, int8, int16, int32, int64
+//   - Boolean type: bool
+//   - Floating point types: float32, float64
+//   - String
+//   - Byte slice ([]byte)
+//   - Byte arrays ([N]byte)
+//   - Other slices
+//   - Other arrays
+//   - Structs
+//   - Nested structs
+//
 // Custom types can implement BinaryMarshaler and BinaryUnmarshaler interfaces
 // for custom serialization behavior.
 package binary

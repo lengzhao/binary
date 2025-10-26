@@ -99,6 +99,13 @@ data, err := binary.Marshal(number)
 // ... handle error
 var decodedNumber uint32
 err = binary.Unmarshal(data, &decodedNumber)
+
+// Direct boolean encoding/decoding
+flag := true
+data, err = binary.Marshal(flag)
+// ... handle error
+var decodedFlag bool
+err = binary.Unmarshal(data, &decodedFlag)
 ```
 
 ### Partial Unmarshaling
@@ -191,12 +198,13 @@ This applies to:
 ### Supported Types
 
 - Integer types: `uint8`, `uint16`, `uint32`, `uint64`, `int8`, `int16`, `int32`, `int64`
+- Boolean type: `bool`
 - Floating point types: `float32`, `float64`
 - String
 - Byte slice (`[]byte`)
 - Byte arrays (`[N]byte`)
-- Other slices
-- Other arrays
+- Other slices (including `[]bool`)
+- Other arrays (including `[N]bool`)
 - Structs
 - Nested structs
 

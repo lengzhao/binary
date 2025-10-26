@@ -76,7 +76,7 @@ func decodeField(buf *bytes.Reader, field reflect.Value, tag string) error {
 		return decodeField(buf, field.Elem(), tag)
 
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int:
+		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int, reflect.Bool:
 		// For basic numeric types, we need to pass a pointer to binary.Read
 		if field.CanAddr() {
 			return binary.Read(buf, binary.LittleEndian, field.Addr().Interface())

@@ -910,3 +910,66 @@ func TestUnmarshalPartial(t *testing.T) {
 
 	t.Logf("BinaryUnmarshaler test - result: %+v, remaining: %d", customType, remaining4)
 }
+
+// TestBoolType tests encoding and decoding of boolean values
+func TestBoolType(t *testing.T) {
+	type BoolStruct struct {
+		FlagTrue  bool
+		FlagFalse bool
+	}
+
+	original := BoolStruct{
+		FlagTrue:  true,
+		FlagFalse: false,
+	}
+
+	data, err := Marshal(original)
+	assert.NoError(t, err)
+
+	var decoded BoolStruct
+	err = Unmarshal(data, &decoded)
+	assert.NoError(t, err)
+
+	assert.Equal(t, original.FlagTrue, decoded.FlagTrue)
+	assert.Equal(t, original.FlagFalse, decoded.FlagFalse)
+}
+
+// TestBoolSlice tests encoding and decoding of boolean slices
+func TestBoolSlice(t *testing.T) {
+	type BoolSliceStruct struct {
+		Flags []bool
+	}
+
+	original := BoolSliceStruct{
+		Flags: []bool{true, false, true, false, true},
+	}
+
+	data, err := Marshal(original)
+	assert.NoError(t, err)
+
+	var decoded BoolSliceStruct
+	err = Unmarshal(data, &decoded)
+	assert.NoError(t, err)
+
+	assert.Equal(t, original.Flags, decoded.Flags)
+}
+
+// TestBoolArray tests encoding and decoding of boolean arrays
+func TestBoolArray(t *testing.T) {
+	type BoolArrayStruct struct {
+		Flags [5]bool
+	}
+
+	original := BoolArrayStruct{
+		Flags: [5]bool{true, false, true, false, true},
+	}
+
+	data, err := Marshal(original)
+	assert.NoError(t, err)
+
+	var decoded BoolArrayStruct
+	err = Unmarshal(data, &decoded)
+	assert.NoError(t, err)
+
+	assert.Equal(t, original.Flags, decoded.Flags)
+}
