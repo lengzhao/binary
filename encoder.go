@@ -74,6 +74,11 @@ func encodeStruct(val reflect.Value, buf *bytes.Buffer) error {
 
 // encodeField handles serialization of a single field
 func encodeField(field reflect.Value, buf *bytes.Buffer, tag string) error {
+	// If tag is "-", skip this field entirely (consistent with struct behavior)
+	if tag == "-" {
+		return nil
+	}
+
 	switch field.Kind() {
 	case reflect.Ptr:
 		// Handle pointer types by dereferencing them
@@ -128,6 +133,10 @@ func encodeString(s string, buf *bytes.Buffer, tag string) error {
 	// Check if tag specifies length
 	if tag != "" {
 		if length, err := parseTag(tag); err == nil {
+			if length == 0 {
+				// For zero-length strings, write nothing
+				return nil
+			}
 			if uint32(len(data)) > length {
 				// Truncate data if it's longer than specified length
 				data = data[:length]
@@ -157,6 +166,10 @@ func encodeBytes(b []byte, buf *bytes.Buffer, tag string) error {
 	// Check if tag specifies length
 	if tag != "" {
 		if length, err := parseTag(tag); err == nil {
+			if length == 0 {
+				// For zero-length bytes, write nothing
+				return nil
+			}
 			if uint32(len(b)) > length {
 				// Truncate data if it's longer than specified length
 				b = b[:length]
@@ -203,8 +216,6 @@ func encodeSlice(slice reflect.Value, buf *bytes.Buffer, tag string) error {
 				}
 			}
 			return nil
-		} else if tag == "-" {
-			// If tag is "-", use default format
 		}
 	}
 
@@ -247,20 +258,15 @@ func encodeArray(array reflect.Value, buf *bytes.Buffer, tag string) error {
 				}
 			}
 			return nil
-		} else if tag == "-" {
-			// If tag is "-", use default format
 		}
 	}
 
-	// Default format: len(array) + elements
+	// For arrays without tags, we also don't write the length prefix
+	// because the length is fixed and known at compile time
 	length := uint32(array.Len())
-	if err := binary.Write(buf, binary.LittleEndian, length); err != nil {
-		return err
-	}
 
-	// Write each element
-	for i := 0; i < int(length); i++ {
-		elem := array.Index(i)
+	for i := uint32(0); i < length; i++ {
+		elem := array.Index(int(i))
 		if err := encodeField(elem, buf, ""); err != nil {
 			return err
 		}

@@ -65,6 +65,11 @@ func UnmarshalPartial(data []byte, v interface{}) (remaining int, err error) {
 
 // decodeField handles deserialization of a single field
 func decodeField(buf *bytes.Reader, field reflect.Value, tag string) error {
+	// If tag is "-", skip this field entirely (consistent with struct behavior)
+	if tag == "-" {
+		return nil
+	}
+
 	switch field.Kind() {
 	case reflect.Ptr:
 		// Handle pointer types by dereferencing them
@@ -141,6 +146,10 @@ func decodeString(buf *bytes.Reader, field reflect.Value, tag string) error {
 	// Check if tag specifies length
 	if tag != "" {
 		if length, parseErr := parseTag(tag); parseErr == nil {
+			if length == 0 {
+				field.SetString("")
+				return nil
+			}
 			data = make([]byte, length)
 			if _, err = buf.Read(data); err != nil {
 				return err
@@ -181,6 +190,10 @@ func decodeBytes(buf *bytes.Reader, field reflect.Value, tag string) error {
 	// Check if tag specifies length
 	if tag != "" {
 		if length, parseErr := parseTag(tag); parseErr == nil {
+			if length == 0 {
+				field.SetBytes([]byte{})
+				return nil
+			}
 			data = make([]byte, length)
 			if _, err = buf.Read(data); err != nil {
 				return err
@@ -195,6 +208,13 @@ func decodeBytes(buf *bytes.Reader, field reflect.Value, tag string) error {
 	if err = binary.Read(buf, binary.LittleEndian, &length); err != nil {
 		return err
 	}
+
+	// Handle zero-length byte slices
+	if length == 0 {
+		field.SetBytes([]byte{})
+		return nil
+	}
+
 	data = make([]byte, length)
 	if _, err = buf.Read(data); err != nil {
 		return err
@@ -243,6 +263,17 @@ func decodeByteArray(buf *bytes.Reader, field reflect.Value, tag string) error {
 	if err = binary.Read(buf, binary.LittleEndian, &length); err != nil {
 		return err
 	}
+
+	// Handle zero-length byte arrays
+	if length == 0 {
+		// Zero out all elements
+		arrayLen := field.Len()
+		for i := 0; i < arrayLen; i++ {
+			field.Index(i).SetUint(0)
+		}
+		return nil
+	}
+
 	data = make([]byte, length)
 	if _, err = buf.Read(data); err != nil {
 		return err
@@ -275,6 +306,13 @@ func decodeSlice(buf *bytes.Reader, field reflect.Value, tag string) error {
 		if length, err := parseTag(tag); err == nil {
 			// Get slice type and element type
 			sliceType := field.Type()
+
+			// Handle zero-length slices
+			if length == 0 {
+				newSlice := reflect.MakeSlice(sliceType, 0, 0)
+				field.Set(newSlice)
+				return nil
+			}
 
 			// For fixed-length slices, we don't read a length prefix
 			// Create slice with the specified fixed length
@@ -324,6 +362,15 @@ func decodeArray(buf *bytes.Reader, field reflect.Value, tag string) error {
 			arrayType := field.Type()
 			arrayLen := uint32(arrayType.Len())
 
+			// Handle zero-length arrays
+			if length == 0 {
+				// Zero out all elements
+				for i := 0; i < int(arrayLen); i++ {
+					field.Index(i).Set(reflect.Zero(arrayType.Elem()))
+				}
+				return nil
+			}
+
 			// For fixed-length arrays, we don't read a length prefix
 			// Read elements directly
 			for i := uint32(0); i < length; i++ {
@@ -351,37 +398,18 @@ func decodeArray(buf *bytes.Reader, field reflect.Value, tag string) error {
 		}
 	}
 
-	// Default format: len(array) + elements
-	var length uint32
-	if err := binary.Read(buf, binary.LittleEndian, &length); err != nil {
-		return err
-	}
-
-	// Get array type and length
+	// For arrays without tags, we also don't read a length prefix
+	// because the length is fixed and known at compile time
 	arrayType := field.Type()
 	arrayLen := uint32(arrayType.Len())
-	elemType := arrayType.Elem()
 
-	// Read elements, padding with zero values if necessary
-	for i := uint32(0); i < length; i++ {
-		if i < arrayLen {
-			// Read actual element into array
-			elem := field.Index(int(i))
-			if err := decodeField(buf, elem, ""); err != nil {
-				return err
-			}
-		} else {
-			// Skip extra elements by reading into a temporary value
-			temp := reflect.New(elemType).Elem()
-			if err := decodeField(buf, temp, ""); err != nil {
-				return err
-			}
+	// Read elements directly
+	for i := uint32(0); i < arrayLen; i++ {
+		// Read actual element into array
+		elem := field.Index(int(i))
+		if err := decodeField(buf, elem, ""); err != nil {
+			return err
 		}
-	}
-
-	// Zero out remaining elements if data is shorter than array
-	for i := length; i < arrayLen; i++ {
-		field.Index(int(i)).Set(reflect.Zero(elemType))
 	}
 
 	return nil
