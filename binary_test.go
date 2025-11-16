@@ -973,3 +973,82 @@ func TestBoolArray(t *testing.T) {
 
 	assert.Equal(t, original.Flags, decoded.Flags)
 }
+
+// Hash 哈希值类型
+type Hash [32]byte
+
+// Address 地址类型
+type Address [20]byte
+
+// Transaction 交易结构
+type Transaction struct {
+	ShardID   uint64  // 分片ID
+	From      Address // 发送方地址
+	To        Address // 接收方地址
+	Amount    uint64  // 转账金额
+	Nonce     uint64  // 防重放攻击 nonce
+	Data      []byte  // 数据
+	GasPrice  uint64  // Gas价格
+	GasLimit  uint64  // Gas限制
+	GasFeeCap uint64  // Gas费用上限
+	PublicKey []byte  // 发送方公钥
+}
+
+// Transaction 交易结构
+type TransactionWithSign struct {
+	Transaction
+	Signature []byte // 交易签名
+}
+
+func TestTransaction(t *testing.T) {
+	var tx TransactionWithSign
+	tx.ShardID = 1
+	tx.From = [20]byte{1, 2, 3}
+	tx.To = [20]byte{4, 5, 6}
+	tx.Amount = 100
+	tx.Nonce = 1
+	tx.Data = []byte("hello")
+	tx.GasPrice = 10
+	tx.GasLimit = 100
+	tx.GasFeeCap = 100
+	tx.PublicKey = []byte("pubkey")
+	tx.Signature = []byte("signature")
+	data, err := Marshal(tx)
+	assert.NoError(t, err)
+	t.Logf("Transaction data: %v", data)
+	var decoded TransactionWithSign
+	err = Unmarshal(data, &decoded)
+	assert.NoError(t, err)
+	t.Logf("Decoded transaction: %+v", decoded)
+	assert.Equal(t, tx, decoded)
+	assert.Equal(t, tx.Signature, decoded.Signature)
+
+}
+
+func TestTmpStruct(t *testing.T) {
+	response := struct {
+		NodeID string `json:"node_id"`
+		Height uint64 `json:"height"`
+		Error  string `json:"error"`
+	}{
+		NodeID: "node-100",
+		Height: 100,
+		Error:  "",
+	}
+	data, err := Marshal(response)
+
+	assert.NoError(t, err)
+	t.Logf("Tmp struct data: %v", data)
+	var decoded struct {
+		NodeID string `json:"node_id"`
+		Height uint64 `json:"height"`
+		Error  string `json:"error"`
+	}
+	err = Unmarshal(data, &decoded)
+	assert.NoError(t, err)
+	t.Logf("Decoded tmp struct: %+v", decoded)
+	assert.Equal(t, response.NodeID, decoded.NodeID)
+	assert.Equal(t, response.Height, decoded.Height)
+	assert.Equal(t, response.Error, decoded.Error)
+	assert.Equal(t, response, decoded)
+}

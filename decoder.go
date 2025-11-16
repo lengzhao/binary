@@ -157,6 +157,13 @@ func decodeString(buf *bytes.Reader, field reflect.Value, tag string) error {
 	if err = binary.Read(buf, binary.LittleEndian, &length); err != nil {
 		return err
 	}
+
+	// Handle zero-length strings
+	if length == 0 {
+		field.SetString("")
+		return nil
+	}
+
 	data = make([]byte, length)
 	if _, err = buf.Read(data); err != nil {
 		return err
